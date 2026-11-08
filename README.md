@@ -73,7 +73,7 @@ npx wrangler dev
 サーバーは解答が問題と合っているか、ヒント数字がないかなどを確かめますが、
 タイム自体はブラウザの申告なので、改ざんを完全には防げません。
 
-公開先: https://killer-sudoku.kyamotu-kyamotu.workers.dev/
+公開先: https://killer-sudoku.a1danwa.workers.dev/
 (新しい Cloudflare Pages は Workers の静的アセットとして動くため、URL は workers.dev になる)
 
 データ形式・設計・今後の予定は [PLAN.md](PLAN.md) を参照。

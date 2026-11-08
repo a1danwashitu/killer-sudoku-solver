@@ -16,7 +16,7 @@
     {
       "binding": "DB",
       "database_name": "killer-sudoku",
-      "database_id": "ffb2afeb-dea1-454e-b466-d5c28a1c14fd",
+      "database_id": "1a44ecfd-fb69-4616-99d3-86c6c7963d45",
       "migrations_dir": "migrations"
     }
   ]
