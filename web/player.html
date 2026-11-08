@@ -122,6 +122,11 @@ button, select, textarea { font: inherit; color: inherit; }
 .tools button { border: 0; border-radius: 8px; background: var(--btn); padding: 9px 4px; font-size: 14px; cursor: pointer; touch-action: manipulation; }
 .tools button:hover { background: var(--btn-hover); }
 .tools button[aria-pressed="true"] { background: var(--accent); color: var(--accent-ink); }
+.tools button.used { outline: 2px dashed var(--muted); outline-offset: -2px; }
+.tools button.used { padding-top: 4px; padding-bottom: 4px; }
+.tools button.used::after { content: "使用済み"; display: block; font-size: 11px; font-weight: 400; line-height: 1.2; }
+.foot { font-size: 13px; color: var(--muted); text-align: right; }
+.foot a { color: var(--accent); }
 .toggle { display: flex; gap: 8px; align-items: center; font-size: 14px; color: var(--muted); cursor: pointer; }
 .combos { background: var(--panel); border-radius: 10px; padding: 10px 12px; font-size: 14px; }
 .combos .head { color: var(--muted); margin-bottom: 6px; }
@@ -270,8 +275,10 @@ kbd { font-family: ui-monospace, Consolas, monospace; font-size: 12px; border: 1
           <li>ヒントの「45の法則」: 行・列・ブロック（またはその連続したまとまり）の合計は 45×本数。中に収まるケージの合計を引くと、外へはみ出すケージのうち内側にあるマス（内側）や、外にはみ出したマス（外側）の合計が分かります</li>
           <li>途中経過はこのブラウザに自動保存されます</li>
           <li>このサイトで生成した問題を、ヒントも答え合わせも使わずにクリアすると、タイムをランキング（ケージの大きさ別に月間・通時）に登録できます。「最初から」で解き直した場合は登録できません</li>
+          <li>ヒント・答え合わせは、最初に押すときにランキングに登録できなくなることを確認します。押したあとはボタンに「使用済み」と表示されます</li>
         </ul>
       </details>
+      <p class="foot"><a href="https://github.com/a1danwashitu/killer-sudoku-solver" target="_blank" rel="noopener">ソースコード（GitHub）</a></p>
     </aside>
   </section>
 </main>
@@ -411,16 +418,28 @@ function clearHint() {
 }
 
 // noRecord: ランキングに登録できない理由('hint' / 'check' / 'replay')。recorded: 登録結果。
+// used: ヒント・答え合わせを押したか({ hint, check })。ボタンに「使用済み」と出す。
 function freshState(puzzle) {
-  return { values: puzzle.givens.slice(), pencils: new Array(81).fill(0), elapsed: 0, solved: false, noRecord: null, recorded: null };
+  return { values: puzzle.givens.slice(), pencils: new Array(81).fill(0), elapsed: 0, solved: false, noRecord: null, recorded: null, used: {} };
 }
 
 const NO_RECORD_REASON = { hint: 'ヒントを使った', check: '答え合わせをした', replay: '解き直した' };
+const ASSIST_NAMES = { hint: 'ヒント', check: '答え合わせ' };
+
+// 押したことがあるか(used が無い古い保存データは noRecord から判断する)。
+const usedAssist = (kind) => !!(S.used && S.used[kind]) || S.noRecord === kind;
+
+// ヒント・答え合わせを押してよいか。まだランキングに登録できる問題なら、最初の 1 回だけ確認する。
+function confirmAssist(kind) {
+  if (!rankable() || S.solved || S.noRecord) return true;
+  return confirm(`${ASSIST_NAMES[kind]}を使うと、この問題はランキングに登録できなくなります。\n使いますか？`);
+}
 
 // ヒント・答え合わせを使ったら、その問題はランキングに登録できなくする。
 function markAssisted(kind) {
-  if (S.solved || S.noRecord) return;
-  S.noRecord = kind;
+  if (S.solved) return;
+  S.used = { ...S.used, [kind]: true };
+  if (!S.noRecord) S.noRecord = kind;
   save();
 }
 
@@ -578,6 +597,7 @@ function cageError(i) {
 
 function checkAnswer() {
   if (!P || S.solved) return;
+  if (!confirmAssist('check')) return;
   markAssisted('check');
   if (!P.answer) {
     const n = conflicts().size;
@@ -597,8 +617,10 @@ function reset() {
   if (!confirm('この問題を最初からやり直しますか？')) return;
   // 一度クリアした問題やヒントを使った問題は、やり直してもランキングには登録できない。
   const noRecord = S.noRecord || (S.solved ? 'replay' : null);
+  const used = { ...S.used, hint: usedAssist('hint'), check: usedAssist('check') };
   S = freshState(P);
   S.noRecord = noRecord;
+  S.used = used;
   undoStack = [];
   redoStack = [];
   wrongMarks = new Set();
@@ -1091,6 +1113,7 @@ function overviewStage(r) {
 
 function showHint() {
   if (!P || S.solved) return;
+  if (!confirmAssist('hint')) return;
   markAssisted('hint');
   // 間違った数字があると推論が成り立たないので、先に知らせる。
   const bad = P.answer
@@ -1236,6 +1259,11 @@ function render() {
   status.textContent = message.text;
   status.className = 'status' + (message.kind ? ' ' + message.kind : '');
   $('pencil').setAttribute('aria-pressed', String(pencilMode));
+  for (const kind of ['hint', 'check']) {
+    const used = usedAssist(kind);
+    $(kind).classList.toggle('used', used);
+    $(kind).title = used ? `${ASSIST_NAMES[kind]}を使いました（この問題はランキングに登録できません）` : '';
+  }
   $('timer').textContent = formatTime(S.elapsed);
 }
 
