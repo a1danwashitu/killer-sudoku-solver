@@ -70,6 +70,10 @@ npx wrangler d1 migrations apply DB --local
 npx wrangler dev
 ```
 
+月が変わると(日本時間 1 日 0:05)、前月の月間ランキング(区分ごとに上位 10 件)を Discord に通知します。
+Cron Trigger が毎日動き、月初 7 日以内に前月分が未送信なら送ります(送った月は `notifications` 表に記録)。
+Webhook の URL はシークレットで設定します: `npx wrangler secret put DISCORD_WEBHOOK_URL`
+
 サーバーは解答が問題と合っているか、ヒント数字がないかなどを確かめますが、
 タイム自体はブラウザの申告なので、改ざんを完全には防げません。
 

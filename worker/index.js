@@ -13,6 +13,7 @@ export default {
     try {
       if (url.pathname === '/api/records' && request.method === 'POST') return await postRecord(request, env);
       if (url.pathname === '/api/ranking' && request.method === 'GET') return await getRanking(url, env);
+      if (url.pathname === '/api/admin/notify-test' && request.method === 'POST') return await notifyTest(request, env);
       if (url.pathname.startsWith('/api/')) return json({ error: 'not found' }, 404);
       return env.ASSETS.fetch(request);
     } catch (err) {
@@ -21,7 +22,94 @@ export default {
       return json({ error: 'サーバーでエラーが発生しました' }, 500);
     }
   },
+
+  // Cron Trigger(毎日)。月が変わったら前月の月間ランキングを Discord に通知する。
+  async scheduled(controller, env, ctx) {
+    ctx.waitUntil(notifyMonthly(env, controller.scheduledTime));
+  },
 };
+
+// ---------- Discord への月間ランキング通知 ----------
+// 毎日動かし、日本時間で月初から NOTIFY_DAYS 日以内に前月分が未送信なら送る
+// (Discord が失敗しても翌日に再送される)。送った月は notifications 表に記録する。
+
+const NOTIFY_DAYS = 7;
+const NOTIFY_TOP = 10;
+const CATEGORY_NAMES = { 4: 'ケージ4マスまで', 5: 'ケージ5マスまで', 6: 'ケージ6マスまで', 9: 'ケージ9マスまで' };
+
+function previousMonth(month) {
+  const [y, m] = month.split('-').map(Number);
+  return new Date(Date.UTC(y, m - 2, 1)).toISOString().slice(0, 7);
+}
+
+function formatTime(sec) {
+  const h = Math.floor(sec / 3600), m = Math.floor((sec % 3600) / 60), s = sec % 60;
+  const ss = String(s).padStart(2, '0');
+  return h ? `${h}:${String(m).padStart(2, '0')}:${ss}` : `${m}:${ss}`;
+}
+
+// 名前に含まれる Discord の書式記号を無効にする
+const escapeMarkdown = (text) => text.replace(/([\\*_~`|>#\[\]()-])/g, '\\$1');
+
+export async function notifyMonthly(env, now = Date.now()) {
+  if (!env.DISCORD_WEBHOOK_URL) {
+    console.log('DISCORD_WEBHOOK_URL が未設定のため通知しません');
+    return;
+  }
+  const today = jstDate(now);
+  if (Number(today.slice(8, 10)) > NOTIFY_DAYS) return;
+  const month = previousMonth(today.slice(0, 7));
+  const sent = await env.DB.prepare('SELECT 1 FROM notifications WHERE month = ?').bind(month).first();
+  if (sent) return;
+
+  await postMonthlyRanking(env, month);
+  await env.DB.prepare('INSERT OR IGNORE INTO notifications (month, sent_at) VALUES (?, ?)')
+    .bind(month, new Date(now).toISOString()).run();
+  console.log(`${month} の月間ランキングを通知しました`);
+}
+
+// 通知のテスト送信(今月分、「テスト」と付けて送る。notifications 表には記録しない)。
+// シークレット ADMIN_TOKEN を設定しているときだけ使える:
+//   curl -X POST -H "authorization: Bearer <ADMIN_TOKEN>" https://<サイト>/api/admin/notify-test
+async function notifyTest(request, env) {
+  if (!env.ADMIN_TOKEN || request.headers.get('authorization') !== `Bearer ${env.ADMIN_TOKEN}`) {
+    return json({ error: 'not found' }, 404);
+  }
+  if (!env.DISCORD_WEBHOOK_URL) return json({ error: 'DISCORD_WEBHOOK_URL が未設定です' }, 500);
+  const month = jstDate().slice(0, 7);
+  await postMonthlyRanking(env, month, true);
+  return json({ ok: true, month });
+}
+
+export async function postMonthlyRanking(env, month, test = false) {
+  const [y, m] = month.split('-').map(Number);
+  const lines = [`## 🏆 ${test ? '【テスト】' : ''}${y}年${m}月のランキング`];
+  let total = 0;
+  for (const category of CATEGORIES) {
+    const { results } = await env.DB.prepare(
+      'SELECT name, seconds, date FROM records WHERE category = ? AND month = ? ORDER BY seconds, id LIMIT ?',
+    ).bind(category, month, NOTIFY_TOP).all();
+    const { n } = await env.DB.prepare('SELECT COUNT(*) AS n FROM records WHERE category = ? AND month = ?')
+      .bind(category, month).first();
+    total += n;
+    if (!results.length) continue;
+    lines.push('', `**${CATEGORY_NAMES[category]}**（${n}件）`);
+    results.forEach((r, i) => {
+      const medal = ['🥇', '🥈', '🥉'][i] || `${i + 1}.`;
+      lines.push(`${medal} ${escapeMarkdown(r.name)}　${formatTime(r.seconds)}　(${r.date.slice(5).replace('-', '/')})`);
+    });
+  }
+  if (!total) lines.push('', 'この月の記録はありませんでした。');
+  if (env.SITE_URL) lines.push('', env.SITE_URL);
+
+  const res = await fetch(env.DISCORD_WEBHOOK_URL, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    // 名前に @everyone などがあってもメンションしない
+    body: JSON.stringify({ content: lines.join('\n').slice(0, 2000), allowed_mentions: { parse: [] } }),
+  });
+  if (!res.ok) throw new Error(`Discord への通知に失敗しました: ${res.status} ${await res.text()}`);
+}
 
 class BadRequest extends Error {}
 

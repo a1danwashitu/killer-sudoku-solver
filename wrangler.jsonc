@@ -11,6 +11,14 @@
     "directory": "dist",
     "binding": "ASSETS"
   },
+  // 毎日 0:05(日本時間)。月が変わったら前月の月間ランキングを Discord に通知する。
+  // Webhook の URL はシークレット: `npx wrangler secret put DISCORD_WEBHOOK_URL`
+  "triggers": {
+    "crons": ["5 15 * * *"]
+  },
+  "vars": {
+    "SITE_URL": "https://killer-sudoku.a1danwa.workers.dev/"
+  },
   // `npx wrangler d1 create killer-sudoku` で作ったデータベース。
   "d1_databases": [
     {
