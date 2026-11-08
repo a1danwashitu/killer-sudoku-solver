@@ -1,0 +1,11 @@
+[package]
+name = "killer-sudoku-solver"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+rand = "0.8"
+
+# ブラウザ用の wasm ビルド(src/wasm.rs)。乱数の種は JS から渡すので OS の乱数源は使わない。
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+getrandom = { version = "0.2", features = ["custom"] }
