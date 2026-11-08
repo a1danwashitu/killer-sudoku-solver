@@ -1,0 +1,23 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "killer-sudoku",
+  "compatibility_date": "2026-10-23",
+  "observability": {
+    "enabled": true
+  },
+  // ランキング API(/api/*)。それ以外は dist/ の静的ファイルをそのまま返す。
+  "main": "worker/index.js",
+  "assets": {
+    "directory": "dist",
+    "binding": "ASSETS"
+  },
+  // `npx wrangler d1 create killer-sudoku` で作ったデータベース。
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "killer-sudoku",
+      "database_id": "ffb2afeb-dea1-454e-b466-d5c28a1c14fd",
+      "migrations_dir": "migrations"
+    }
+  ]
+}

@@ -1,0 +1,1672 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>キラーナンプレ</title>
+<style>
+:root {
+  --bg: #f4f3ef;
+  --panel: #ffffff;
+  --ink: #1d1d1f;
+  --muted: #6b6b70;
+  --cell: #ffffff;
+  --thin: #cfccc4;
+  --box: #1d1d1f;
+  --cage: #55555c;
+  --sel: #ffe28a;
+  --peer: #eef0f4;
+  --same: #d6e4ff;
+  --wrong: #ffd9d6;
+  --given: #1d1d1f;
+  --user: #2753c4;
+  --pencil: #5d5d64;
+  --error: #cf3229;
+  --accent: #2753c4;
+  --accent-ink: #ffffff;
+  --btn: #ebe9e3;
+  --btn-hover: #e0ded6;
+  --ok: #1f7a3d;
+  --hint: #d4f0dc;
+  --hint-ink: #1f6b38;
+  --hint-x: #fbe3cf;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #141416;
+    --panel: #1d1d20;
+    --ink: #ececee;
+    --muted: #9a9aa1;
+    --cell: #1d1d20;
+    --thin: #38383e;
+    --box: #d8d8dc;
+    --cage: #a4a4ac;
+    --sel: #5b4b12;
+    --peer: #26282d;
+    --same: #1f3157;
+    --wrong: #5a2220;
+    --given: #ececee;
+    --user: #8fb0ff;
+    --pencil: #a9a9b0;
+    --error: #ff6b62;
+    --accent: #8fb0ff;
+    --accent-ink: #141416;
+    --btn: #2a2a2f;
+    --btn-hover: #34343a;
+    --ok: #5fd08a;
+    --hint: #1d3a27;
+    --hint-ink: #7fdc9e;
+    --hint-x: #45301c;
+  }
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html, body { margin: 0; }
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: system-ui, -apple-system, "Segoe UI", "Hiragino Sans", "Yu Gothic UI", Meiryo, sans-serif;
+  -webkit-tap-highlight-color: transparent;
+}
+button, select, textarea { font: inherit; color: inherit; }
+.app { max-width: 980px; margin: 0 auto; padding: 16px; }
+.top { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 14px; }
+.top h1 { font-size: 20px; margin: 0 auto 0 0; letter-spacing: .02em; }
+.picker { display: flex; gap: 6px; align-items: center; }
+.picker button { border: 0; border-radius: 8px; background: var(--btn); width: 34px; height: 34px; font-size: 20px; line-height: 1; cursor: pointer; }
+.picker button:hover { background: var(--btn-hover); }
+.picker button:disabled { opacity: .35; cursor: default; }
+.picker select { background: var(--panel); border: 1px solid var(--thin); border-radius: 8px; padding: 6px 8px; min-width: 9em; }
+.gen { display: flex; gap: 6px; align-items: center; }
+.gen select { background: var(--panel); border: 1px solid var(--thin); border-radius: 8px; padding: 6px 8px; min-width: 10em; }
+.gen button { border: 0; border-radius: 8px; background: var(--accent); color: var(--accent-ink); padding: 7px 14px; font-weight: 600; cursor: pointer; white-space: nowrap; }
+.timer { font-variant-numeric: tabular-nums; font-size: 18px; min-width: 4.5em; text-align: right; color: var(--muted); }
+.play { display: grid; grid-template-columns: minmax(0, 620px) minmax(240px, 1fr); gap: 20px; align-items: start; }
+.board-wrap { background: var(--panel); border-radius: 12px; padding: 10px; box-shadow: 0 1px 3px rgba(0,0,0,.08); }
+#board { display: block; width: 100%; height: auto; touch-action: manipulation; user-select: none; -webkit-user-select: none; cursor: pointer; }
+#board .c { fill: var(--cell); }
+#board .c.peer { fill: var(--peer); }
+#board .c.same { fill: var(--same); }
+#board .c.sel { fill: var(--sel); }
+#board .c.wrong { fill: var(--wrong); }
+#board .thin { stroke: var(--thin); stroke-width: 1.5; }
+#board .box { stroke: var(--box); stroke-width: 3.5; }
+#board .outer { fill: none; stroke: var(--box); stroke-width: 5; }
+#board .cage { fill: none; stroke: var(--cage); stroke-width: 2; stroke-dasharray: 7 5; }
+#board .sum { fill: var(--ink); font-size: 21px; font-weight: 600; }
+#board .sum.bad { fill: var(--error); }
+#board .val { font-size: 54px; text-anchor: middle; dominant-baseline: central; }
+#board .val.given { fill: var(--given); font-weight: 700; }
+#board .val.user { fill: var(--user); }
+#board .val.err { fill: var(--error); }
+#board .pm { fill: var(--pencil); font-size: 22px; text-anchor: middle; dominant-baseline: central; }
+#board .pm.hl { fill: var(--user); font-weight: 700; }
+.side { display: flex; flex-direction: column; gap: 12px; }
+.status { min-height: 1.5em; font-size: 15px; color: var(--muted); }
+.status.ok { color: var(--ok); font-weight: 700; }
+.status.bad { color: var(--error); }
+.pad { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.pad button { position: relative; border: 0; border-radius: 10px; background: var(--btn); padding: 10px 0 14px; font-size: 26px; font-weight: 600; cursor: pointer; touch-action: manipulation; }
+.pad button:hover { background: var(--btn-hover); }
+.pad button .rest { position: absolute; right: 8px; bottom: 4px; font-size: 11px; font-weight: 400; color: var(--muted); }
+.pad button.done { opacity: .35; }
+.pad.pencil button { color: var(--user); font-weight: 400; }
+.tools { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
+.tools #hint { grid-column: span 2; background: var(--hint); color: var(--hint-ink); font-weight: 600; }
+.status { line-height: 1.6; white-space: pre-line; }
+.status.hint { color: var(--hint-ink); }
+#board .c.hint { fill: var(--hint); }
+#board .c.hintx { fill: var(--hint-x); }
+#board .pm.x { fill: var(--error); font-weight: 700; }
+#board .pmx { stroke: var(--error); stroke-width: 2; }
+.tools button { border: 0; border-radius: 8px; background: var(--btn); padding: 9px 4px; font-size: 14px; cursor: pointer; touch-action: manipulation; }
+.tools button:hover { background: var(--btn-hover); }
+.tools button[aria-pressed="true"] { background: var(--accent); color: var(--accent-ink); }
+.toggle { display: flex; gap: 8px; align-items: center; font-size: 14px; color: var(--muted); cursor: pointer; }
+.combos { background: var(--panel); border-radius: 10px; padding: 10px 12px; font-size: 14px; }
+.combos .head { color: var(--muted); margin-bottom: 6px; }
+.combos .list { display: flex; flex-wrap: wrap; gap: 6px 10px; font-variant-numeric: tabular-nums; letter-spacing: .08em; }
+.combos .list span.out { opacity: .3; text-decoration: line-through; }
+details { background: var(--panel); border-radius: 10px; padding: 8px 12px; font-size: 14px; }
+details summary { cursor: pointer; color: var(--muted); }
+details textarea { width: 100%; margin: 8px 0; background: var(--bg); border: 1px solid var(--thin); border-radius: 6px; padding: 6px; font-family: ui-monospace, Consolas, monospace; font-size: 12px; resize: vertical; }
+details button { border: 0; border-radius: 8px; background: var(--accent); color: var(--accent-ink); padding: 7px 14px; cursor: pointer; }
+details ul { margin: 8px 0 2px; padding-left: 1.2em; line-height: 1.7; }
+kbd { font-family: ui-monospace, Consolas, monospace; font-size: 12px; border: 1px solid var(--thin); border-radius: 4px; padding: 0 4px; }
+.err { color: var(--error); font-size: 13px; margin: 0; min-height: 1em; }
+.empty { padding: 40px 12px; text-align: center; color: var(--muted); }
+.record { background: var(--panel); border: 2px solid var(--ok); border-radius: 10px; padding: 10px 12px; font-size: 14px; display: flex; flex-direction: column; gap: 8px; }
+.record .head b { font-variant-numeric: tabular-nums; }
+.record .row { display: flex; gap: 6px; align-items: center; min-width: 0; }
+.record select, .record input { flex: 1; min-width: 0; background: var(--bg); border: 1px solid var(--thin); border-radius: 6px; padding: 6px 8px; font: inherit; color: inherit; }
+.record .date { flex: 1; color: var(--muted); font-variant-numeric: tabular-nums; }
+.record button { border: 0; border-radius: 8px; background: var(--accent); color: var(--accent-ink); padding: 7px 16px; font-weight: 600; cursor: pointer; }
+.record button:disabled { opacity: .5; cursor: default; }
+.record .done { color: var(--ok); font-weight: 600; }
+.record p { margin: 0; }
+.record p:empty { display: none; }
+.ranking-ctrl { display: flex; gap: 8px; align-items: center; margin-top: 8px; flex-wrap: wrap; }
+.seg { display: flex; border-radius: 8px; overflow: hidden; }
+.seg button { border: 0; background: var(--btn); padding: 6px 12px; cursor: pointer; }
+.seg button[aria-pressed="true"] { background: var(--accent); color: var(--accent-ink); }
+.ranking-ctrl select { background: var(--bg); border: 1px solid var(--thin); border-radius: 6px; padding: 5px 6px; }
+.month-nav { display: flex; align-items: center; gap: 6px; margin-top: 8px; }
+.month-nav button { border: 0; border-radius: 6px; background: var(--btn); width: 28px; height: 28px; cursor: pointer; }
+.month-nav button:disabled { opacity: .35; cursor: default; }
+.month-nav span { font-variant-numeric: tabular-nums; min-width: 6em; text-align: center; }
+.rank-table { width: 100%; border-collapse: collapse; margin-top: 8px; font-variant-numeric: tabular-nums; }
+.rank-table td { padding: 4px 4px; border-top: 1px solid var(--thin); }
+.rank-table td.n { width: 2.5em; text-align: right; color: var(--muted); }
+.rank-table td.name { overflow-wrap: anywhere; }
+.rank-table td.t { text-align: right; font-weight: 600; }
+.rank-table td.d { text-align: right; color: var(--muted); font-size: 12px; white-space: nowrap; }
+.rank-table tr.me td.name { color: var(--user); font-weight: 600; }
+.rank-empty { color: var(--muted); margin: 8px 0 2px; }
+@media (max-width: 760px) {
+  .app { padding: 12px 16px; }
+  .play { grid-template-columns: minmax(0, 1fr); gap: 14px; }
+  .board-wrap { padding: 6px; }
+  .side { min-width: 0; }
+  .picker { order: 3; width: 100%; }
+  .picker select { flex: 1; }
+  .gen { order: 4; width: 100%; }
+  .gen select { flex: 1; min-width: 0; }
+  .pad { grid-template-columns: repeat(9, minmax(0, 1fr)); gap: 4px; }
+  .pad button { min-width: 0; padding: 8px 0 12px; font-size: 20px; }
+  .pad button .rest { right: 3px; bottom: 1px; font-size: 9px; }
+  .tools button { font-size: 13px; }
+}
+</style>
+</head>
+<body>
+<main class="app">
+  <header class="top">
+    <h1>キラーナンプレ</h1>
+    <div class="picker">
+      <button id="prev" aria-label="前の問題">‹</button>
+      <select id="list" aria-label="問題"></select>
+      <button id="next" aria-label="次の問題">›</button>
+    </div>
+    <div class="gen" id="gen" hidden>
+      <select id="genSize" aria-label="ケージの大きさ">
+        <option value="4">ケージ4マスまで</option>
+        <option value="5" selected>ケージ5マスまで</option>
+        <option value="6">ケージ6マスまで</option>
+        <option value="9">ケージ9マスまで</option>
+      </select>
+      <button id="genBtn">新しい問題</button>
+    </div>
+    <div class="timer" id="timer">0:00</div>
+  </header>
+  <section class="play">
+    <div class="board-wrap" id="boardWrap">
+      <svg id="board" viewBox="-4 -4 908 908" role="grid" aria-label="盤面"></svg>
+      <div class="empty" id="empty" hidden>問題がありません。<br>「問題を貼り付けて読み込む」に問題データを貼り付けるか、<br><code>killer-sudoku-solver html</code> で問題入りのページを作ってください。</div>
+    </div>
+    <aside class="side">
+      <div id="status" class="status" role="status"></div>
+      <div id="record" class="record" hidden>
+        <div class="head"></div>
+        <div class="row">
+          <select id="recNameSel" aria-label="登録済みの名前"></select>
+          <input id="recName" maxlength="20" placeholder="名前" aria-label="名前" autocomplete="nickname">
+        </div>
+        <div class="row">
+          <span class="date" id="recDate"></span>
+          <button id="recSubmit">登録</button>
+        </div>
+        <p id="recMsg" class="err"></p>
+      </div>
+      <div class="pad" id="pad"></div>
+      <div class="tools">
+        <button id="pencil" aria-pressed="false">メモ</button>
+        <button id="erase">消す</button>
+        <button id="undo">戻す</button>
+        <button id="redo">進む</button>
+        <button id="hint">ヒント</button>
+        <button id="check">答え合わせ</button>
+        <button id="reset">最初から</button>
+      </div>
+      <label class="toggle"><input type="checkbox" id="showCombos">選択中のケージの組み合わせを表示</label>
+      <div id="combos" class="combos" hidden></div>
+      <details id="ranking" hidden>
+        <summary>ランキング</summary>
+        <div class="ranking-ctrl">
+          <div class="seg">
+            <button id="rkMonthly" aria-pressed="true">月間</button>
+            <button id="rkAll" aria-pressed="false">通時</button>
+          </div>
+          <select id="rkCat" aria-label="ケージの大きさ">
+            <option value="4">ケージ4マスまで</option>
+            <option value="5" selected>ケージ5マスまで</option>
+            <option value="6">ケージ6マスまで</option>
+            <option value="9">ケージ9マスまで</option>
+          </select>
+        </div>
+        <div class="month-nav" id="rkMonthNav">
+          <button id="rkPrev" aria-label="前の月">‹</button>
+          <span id="rkMonth"></span>
+          <button id="rkNext" aria-label="次の月">›</button>
+        </div>
+        <div id="rkBody"></div>
+      </details>
+      <details id="loader">
+        <summary>問題を貼り付けて読み込む</summary>
+        <textarea id="input" rows="4" placeholder="ケージラベル81文字;合計値,…[;ヒント[;解答]]（1行1問、複数行可）"></textarea>
+        <button id="load">読み込む</button>
+        <p id="loadError" class="err"></p>
+      </details>
+      <details>
+        <summary>操作方法</summary>
+        <ul>
+          <li>マスをクリック／タップして選択、<kbd>↑↓←→</kbd> で移動</li>
+          <li><kbd>1</kbd>〜<kbd>9</kbd> で記入、同じ数字をもう一度で消去</li>
+          <li>左手用: <kbd>Q</kbd><kbd>W</kbd><kbd>E</kbd> = 7 8 9、<kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> = 4 5 6、<kbd>Z</kbd><kbd>X</kbd><kbd>C</kbd> = 1 2 3</li>
+          <li><kbd>V</kbd>（または <kbd>Space</kbd>）でメモモード切替、<kbd>Shift</kbd>+数字キーでいつでもメモ</li>
+          <li><kbd>Backspace</kbd> / <kbd>Delete</kbd> で消す</li>
+          <li><kbd>Ctrl</kbd>+<kbd>Z</kbd> で戻す、<kbd>Ctrl</kbd>+<kbd>Y</kbd> で進む</li>
+          <li>数字を記入すると、同じ行・列・ブロック・ケージのメモからその数字が自動で消えます</li>
+          <li><kbd>H</kbd> または「ヒント」で、次に確定できるマスの手筋と注目する場所を表示します。続けて押すと、手順を1つずつ（消える候補を赤で）説明し、最後にマスと数字を表示します</li>
+          <li>ヒントの「45の法則」: 行・列・ブロック（またはその連続したまとまり）の合計は 45×本数。中に収まるケージの合計を引くと、外へはみ出すケージのうち内側にあるマス（内側）や、外にはみ出したマス（外側）の合計が分かります</li>
+          <li>途中経過はこのブラウザに自動保存されます</li>
+          <li>このサイトで生成した問題を、ヒントも答え合わせも使わずにクリアすると、タイムをランキング（ケージの大きさ別に月間・通時）に登録できます。「最初から」で解き直した場合は登録できません</li>
+        </ul>
+      </details>
+    </aside>
+  </section>
+</main>
+<script>
+'use strict';
+
+// killer-sudoku-solver の `html` サブコマンドがここに問題の配列を埋め込む。
+const EMBEDDED = /*PUZZLES*/[]/*END*/;
+// 問題生成器(src/wasm.rs を wasm にしたもの)の base64。空なら生成機能を出さない。
+const WASM = /*WASM*/""/*END*/;
+
+const C = 100;  // SVG 上の 1 マスの大きさ
+const D = 7;    // ケージ点線の内側へのずらし幅
+
+const $ = (id) => document.getElementById(id);
+const store = {
+  get(key) { try { const v = localStorage.getItem(key); return v ? JSON.parse(v) : null; } catch (e) { return null; } },
+  set(key, value) { try { localStorage.setItem(key, JSON.stringify(value)); } catch (e) { /* 保存できなくても遊べる */ } },
+  remove(key) { try { localStorage.removeItem(key); } catch (e) { /* 同上 */ } },
+};
+
+const rowOf = (id) => Math.floor(id / 9);
+const colOf = (id) => id % 9;
+const boxOf = (id) => Math.floor(id / 27) * 3 + Math.floor((id % 9) / 3);
+const UNITS = [];
+const UNIT_NAMES = [];
+for (let i = 0; i < 9; i++) {
+  UNITS.push([...Array(81).keys()].filter((id) => rowOf(id) === i));
+  UNIT_NAMES.push(`${i + 1}行目`);
+  UNITS.push([...Array(81).keys()].filter((id) => colOf(id) === i));
+  UNIT_NAMES.push(`${i + 1}列目`);
+  UNITS.push([...Array(81).keys()].filter((id) => boxOf(id) === i));
+  UNIT_NAMES.push(`ブロック${i + 1}`);
+}
+
+// ---------- 問題データ ----------
+
+function parseGrid(field) {
+  const chars = Array.from(field.trim());
+  if (chars.length !== 81) throw new Error('盤面は81文字である必要があります');
+  return chars.map((ch) => {
+    if (ch >= '1' && ch <= '9') return Number(ch);
+    if (ch === '.' || ch === '0') return 0;
+    throw new Error(`盤面に不正な文字があります: ${ch}`);
+  });
+}
+
+// `<ケージラベル 81 文字>;<合計値カンマ区切り>[;<ヒント>[;<解答>]]`(Rust 側の Puzzle::parse と同じ形式)
+function parseLine(line) {
+  const fields = line.trim().split(';');
+  if (fields.length < 2 || fields.length > 4) throw new Error('「;」区切りで2〜4項目である必要があります');
+  const labels = Array.from(fields[0].trim());
+  if (labels.length !== 81) throw new Error('ケージラベルは81文字である必要があります');
+  const index = new Map();
+  const cageOf = new Array(81);
+  const cages = [];
+  labels.forEach((label, id) => {
+    if (!index.has(label)) {
+      index.set(label, cages.length);
+      cages.push({ cells: [], sum: 0 });
+    }
+    cageOf[id] = index.get(label);
+    cages[cageOf[id]].cells.push(id);
+  });
+  const sums = fields[1].split(',').map((s) => Number(s.trim()));
+  if (sums.length !== cages.length || sums.some((s) => !Number.isInteger(s))) {
+    throw new Error(`ケージが${cages.length}個ありますが、合計値が${sums.length}個です`);
+  }
+  sums.forEach((sum, i) => { cages[i].sum = sum; });
+  const total = sums.reduce((a, b) => a + b, 0);
+  if (total !== 405) throw new Error(`合計値の総和が405ではありません（${total}）`);
+  const givens = fields[2] ? parseGrid(fields[2]) : new Array(81).fill(0);
+  const answer = fields[3] ? parseGrid(fields[3]) : null;
+  const key = 'killer:' + fields[0].trim() + ';' + fields[1].trim() + ';' + givens.join('');
+  // URL に載せる形。解答は含めない(ヒント数字があるときだけ付ける)。
+  const share = fields.slice(0, givens.some(Boolean) ? 3 : 2).map((f) => f.trim()).join(';');
+  const puzzle = { key, line: line.trim(), share, cageOf, cages, givens, answer, path: cagePath(cageOf) };
+  // 解答のない問題(共有リンクなど)は、ヒントと同じ手筋で解いて答え合わせに使う。
+  if (!puzzle.answer) puzzle.answer = solveByLogic(puzzle);
+  return puzzle;
+}
+
+// ケージの境界を内側に少しずらした点線のパス。凹んだ角では隣のマスへはみ出して線をつなぐ。
+function cagePath(cageOf) {
+  const same = (r, c, r2, c2) => r2 >= 0 && r2 < 9 && c2 >= 0 && c2 < 9 && cageOf[r * 9 + c] === cageOf[r2 * 9 + c2];
+  let d = '';
+  for (let r = 0; r < 9; r++) {
+    for (let c = 0; c < 9; c++) {
+      const x0 = c * C, y0 = r * C, x1 = x0 + C, y1 = y0 + C;
+      const T = !same(r, c, r - 1, c), B = !same(r, c, r + 1, c);
+      const L = !same(r, c, r, c - 1), R = !same(r, c, r, c + 1);
+      if (T) {
+        const xs = L ? x0 + D : (same(r, c, r - 1, c - 1) ? x0 - D : x0);
+        const xe = R ? x1 - D : (same(r, c, r - 1, c + 1) ? x1 + D : x1);
+        d += `M${xs} ${y0 + D}H${xe}`;
+      }
+      if (B) {
+        const xs = L ? x0 + D : (same(r, c, r + 1, c - 1) ? x0 - D : x0);
+        const xe = R ? x1 - D : (same(r, c, r + 1, c + 1) ? x1 + D : x1);
+        d += `M${xs} ${y1 - D}H${xe}`;
+      }
+      if (L) {
+        const ys = T ? y0 + D : (same(r, c, r - 1, c - 1) ? y0 - D : y0);
+        const ye = B ? y1 - D : (same(r, c, r + 1, c - 1) ? y1 + D : y1);
+        d += `M${x0 + D} ${ys}V${ye}`;
+      }
+      if (R) {
+        const ys = T ? y0 + D : (same(r, c, r - 1, c + 1) ? y0 - D : y0);
+        const ye = B ? y1 - D : (same(r, c, r + 1, c + 1) ? y1 + D : y1);
+        d += `M${x1 - D} ${ys}V${ye}`;
+      }
+    }
+  }
+  return d;
+}
+
+// ---------- 状態 ----------
+
+const puzzles = [];   // { name, puzzle }
+let current = -1;
+let P = null;         // 現在の問題
+let S = null;         // { values, pencils, elapsed, solved }
+let sel = 40;
+let pencilMode = false;
+let undoStack = [];
+let redoStack = [];
+let wrongMarks = new Set();
+let message = { text: '', kind: '' };
+let hint = null;            // { result, stage, snapshot, stages }
+let hintMarks = new Set();  // ヒントで注目させるマス
+let hintElim = new Map();   // ヒントの手順で消す候補(マス → 数字のビット)
+
+function clearHint() {
+  hint = null;
+  hintMarks = new Set();
+  hintElim = new Map();
+}
+
+// noRecord: ランキングに登録できない理由('hint' / 'check' / 'replay')。recorded: 登録結果。
+function freshState(puzzle) {
+  return { values: puzzle.givens.slice(), pencils: new Array(81).fill(0), elapsed: 0, solved: false, noRecord: null, recorded: null };
+}
+
+const NO_RECORD_REASON = { hint: 'ヒントを使った', check: '答え合わせをした', replay: '解き直した' };
+
+// ヒント・答え合わせを使ったら、その問題はランキングに登録できなくする。
+function markAssisted(kind) {
+  if (S.solved || S.noRecord) return;
+  S.noRecord = kind;
+  save();
+}
+
+function save() {
+  if (P) store.set(P.key, S);
+}
+
+function selectPuzzle(index) {
+  if (P) save();
+  current = index;
+  P = puzzles[index].puzzle;
+  $('board').removeAttribute('hidden');
+  $('empty').hidden = true;
+  const saved = store.get(P.key);
+  S = saved && Array.isArray(saved.values) && saved.values.length === 81 ? saved : freshState(P);
+  P.givens.forEach((g, id) => { if (g) S.values[id] = g; });
+  undoStack = [];
+  redoStack = [];
+  wrongMarks = new Set();
+  clearHint();
+  sel = P.givens.findIndex((g) => !g);
+  if (sel < 0) sel = 0;
+  message = S.solved ? { text: `クリア済み（${formatTime(S.elapsed)}）`, kind: 'ok' } : { text: '', kind: '' };
+  if (puzzles[index].custom) {
+    history.replaceState(null, '', '#p=' + encodeURIComponent(P.share));
+  } else {
+    history.replaceState(null, '', location.pathname + location.search);
+    store.set('killer:last', index);
+  }
+  renderList();
+  render();
+}
+
+function peersOf(id) {
+  const peers = new Set();
+  for (const unit of UNITS) if (unit.includes(id)) unit.forEach((p) => peers.add(p));
+  P.cages[P.cageOf[id]].cells.forEach((p) => peers.add(p));
+  peers.delete(id);
+  return peers;
+}
+
+// changes: [{ id, value, pencil }]。変更前の状態を undo 用に積む。
+function commit(changes) {
+  const before = changes.map((c) => ({ id: c.id, value: S.values[c.id], pencil: S.pencils[c.id] }));
+  if (changes.every((c, i) => c.value === before[i].value && c.pencil === before[i].pencil)) return;
+  apply(changes);
+  undoStack.push(before);
+  redoStack = [];
+  afterChange();
+}
+
+function apply(changes) {
+  for (const c of changes) {
+    S.values[c.id] = c.value;
+    S.pencils[c.id] = c.pencil;
+  }
+}
+
+function snapshot(changes) {
+  return changes.map((c) => ({ id: c.id, value: S.values[c.id], pencil: S.pencils[c.id] }));
+}
+
+function undo() {
+  if (!P || S.solved || !undoStack.length) return;
+  const changes = undoStack.pop();
+  redoStack.push(snapshot(changes));
+  apply(changes);
+  afterChange();
+}
+
+function redo() {
+  if (!P || S.solved || !redoStack.length) return;
+  const changes = redoStack.pop();
+  undoStack.push(snapshot(changes));
+  apply(changes);
+  afterChange();
+}
+
+function editable() {
+  return P && !S.solved && !P.givens[sel];
+}
+
+function inputDigit(d, asPencil) {
+  if (!editable()) return;
+  const bit = 1 << d;
+  if (pencilMode || asPencil) {
+    if (S.values[sel]) return;
+    commit([{ id: sel, value: 0, pencil: S.pencils[sel] ^ bit }]);
+    return;
+  }
+  if (S.values[sel] === d) {
+    commit([{ id: sel, value: 0, pencil: S.pencils[sel] }]);
+    return;
+  }
+  const changes = [{ id: sel, value: d, pencil: S.pencils[sel] }];
+  for (const p of peersOf(sel)) {
+    if (S.pencils[p] & bit) changes.push({ id: p, value: S.values[p], pencil: S.pencils[p] & ~bit });
+  }
+  commit(changes);
+}
+
+function erase() {
+  if (!editable()) return;
+  if (S.values[sel]) commit([{ id: sel, value: 0, pencil: S.pencils[sel] }]);
+  else if (S.pencils[sel]) commit([{ id: sel, value: 0, pencil: 0 }]);
+}
+
+function afterChange() {
+  wrongMarks = new Set();
+  clearHint();
+  message = { text: '', kind: '' };
+  if (S.values.every((v) => v)) {
+    if (isCorrect()) {
+      S.solved = true;
+      let text = `クリア！ タイム ${formatTime(S.elapsed)}`;
+      if (rankable() && S.noRecord) text += `\n（${NO_RECORD_REASON[S.noRecord]}ため、ランキングには登録できません）`;
+      message = { text, kind: 'ok' };
+      renderList();
+    } else {
+      message = { text: '全マス埋まりましたが、どこかが違います', kind: 'bad' };
+    }
+  }
+  save();
+  render();
+}
+
+function isCorrect() {
+  if (P.answer) return S.values.every((v, id) => v === P.answer[id]);
+  return conflicts().size === 0 && P.cages.every((_, i) => !cageError(i));
+}
+
+// 行・列・ブロック・ケージで数字が重複しているマス。
+function conflicts() {
+  const bad = new Set();
+  const groups = UNITS.concat(P.cages.map((c) => c.cells));
+  for (const cells of groups) {
+    const seen = new Map();
+    for (const id of cells) {
+      const v = S.values[id];
+      if (!v) continue;
+      if (seen.has(v)) { bad.add(id); bad.add(seen.get(v)); } else seen.set(v, id);
+    }
+  }
+  return bad;
+}
+
+// ケージの合計が明らかに合わない(超えている、埋まったのに不一致、残りマスがあるのに達している)。
+function cageError(i) {
+  const cage = P.cages[i];
+  let sum = 0, filled = 0;
+  for (const id of cage.cells) if (S.values[id]) { sum += S.values[id]; filled++; }
+  if (filled === cage.cells.length) return sum !== cage.sum;
+  return sum >= cage.sum;
+}
+
+function checkAnswer() {
+  if (!P || S.solved) return;
+  markAssisted('check');
+  if (!P.answer) {
+    const n = conflicts().size;
+    message = n ? { text: `重複しているマスが${n}個あります`, kind: 'bad' } : { text: 'この問題には解答データがないため、重複のみ確認しました（重複なし）', kind: '' };
+    render();
+    return;
+  }
+  wrongMarks = new Set();
+  clearHint();
+  S.values.forEach((v, id) => { if (v && !P.givens[id] && v !== P.answer[id]) wrongMarks.add(id); });
+  message = wrongMarks.size ? { text: `間違っているマスが${wrongMarks.size}個あります`, kind: 'bad' } : { text: 'ここまで間違いはありません', kind: 'ok' };
+  render();
+}
+
+function reset() {
+  if (!P) return;
+  if (!confirm('この問題を最初からやり直しますか？')) return;
+  // 一度クリアした問題やヒントを使った問題は、やり直してもランキングには登録できない。
+  const noRecord = S.noRecord || (S.solved ? 'replay' : null);
+  S = freshState(P);
+  S.noRecord = noRecord;
+  undoStack = [];
+  redoStack = [];
+  wrongMarks = new Set();
+  clearHint();
+  message = { text: '', kind: '' };
+  save();
+  renderList();
+  render();
+}
+
+// ---------- ヒント ----------
+// Rust 側の論理ソルバー(src/propagate.rs)と同じ手筋を、易しい順に 1 手ずつ適用し、
+// 最初にマスが確定するまでの手順を説明する。候補はユーザーのメモではなく、
+// 記入済みの数字から計算し直す。
+
+const FULL = 0x3fe;  // bit d = 数字 d(1〜9)
+const popcount = (m) => { let n = 0; while (m) { m &= m - 1; n++; } return n; };
+const lowestDigit = (m) => { for (let d = 1; d <= 9; d++) if (m & (1 << d)) return d; return 0; };
+const highestDigit = (m) => { for (let d = 9; d >= 1; d--) if (m & (1 << d)) return d; return 0; };
+const cellName = (id) => `${rowOf(id) + 1}行${colOf(id) + 1}列`;
+
+// COMBOS[マス数][合計] = 相異なる数字の組み合わせ(ビットマスク)の一覧
+const COMBOS = Array.from({ length: 10 }, () => Array.from({ length: 46 }, () => []));
+for (let mask = 2; mask < 1024; mask += 2) {
+  let sum = 0;
+  for (let d = 1; d <= 9; d++) if (mask & (1 << d)) sum += d;
+  COMBOS[popcount(mask)][sum].push(mask);
+}
+
+// 問題ごとの前計算: 各マスの影響範囲(行・列・ブロック・ケージ)と、ケージ・45 の法則の合計制約。
+function hintContext(puzzle) {
+  if (puzzle.hintContext) return puzzle.hintContext;
+  const peers = [];
+  for (let id = 0; id < 81; id++) {
+    const set = new Set();
+    for (const unit of UNITS) if (unit.includes(id)) unit.forEach((p) => set.add(p));
+    puzzle.cages[puzzle.cageOf[id]].cells.forEach((p) => set.add(p));
+    set.delete(id);
+    peers.push(set);
+  }
+  const make = (cells, sum, extra) => {
+    const set = new Set(cells);
+    const distinct = cells.every((a) => cells.every((b) => a === b || peers[a].has(b)));
+    return { cells, set, sum, distinct, ...extra };
+  };
+  const cages = puzzle.cages.map((cage) => make(cage.cells, cage.sum, { kind: 'cage' }));
+
+  // 45 の法則の領域(Rust と同じく 1〜8 本の連続した行・列と各ブロック)。単位の少ない順に試す。
+  const regions = [];
+  for (let len = 1; len <= 8; len++) {
+    for (let start = 0; start + len <= 9; start++) {
+      const span = len === 1 ? `${start + 1}` : `${start + 1}〜${start + len}`;
+      if (len === 1) {
+        for (let b = 0; b < 9; b++) {
+          if (start === 0) regions.push({ cells: UNITS[b * 3 + 2], units: 1, name: `ブロック${b + 1}` });
+        }
+      }
+      regions.push({ cells: [...Array(81).keys()].filter((id) => rowOf(id) >= start && rowOf(id) < start + len), units: len, name: `${span}行目` });
+      regions.push({ cells: [...Array(81).keys()].filter((id) => colOf(id) >= start && colOf(id) < start + len), units: len, name: `${span}列目` });
+    }
+  }
+  const seen = new Set(cages.map((c) => c.cells.join(',')));
+  const virtuals = [];
+  // extra には説明用に、領域・中に収まるケージの合計・はみ出すケージの合計を持たせる。
+  const add = (cells, sum, extra) => {
+    if (!cells.length || cells.length > 9 || sum < 0) return;
+    const key = cells.join(',');
+    if (seen.has(key)) return;
+    seen.add(key);
+    virtuals.push(make(cells, sum, extra));
+  };
+  for (const region of regions) {
+    const inRegion = new Set(region.cells);
+    let insideSum = 0, partialSum = 0;
+    const partial = [];
+    puzzle.cages.forEach((cage) => {
+      const inside = cage.cells.filter((id) => inRegion.has(id)).length;
+      if (inside === cage.cells.length) insideSum += cage.sum;
+      else if (inside > 0) { partial.push(...cage.cells); partialSum += cage.sum; }
+    });
+    const innieSum = 45 * region.units - insideSum;
+    const innies = partial.filter((id) => inRegion.has(id)).sort((a, b) => a - b);
+    const outies = partial.filter((id) => !inRegion.has(id)).sort((a, b) => a - b);
+    const info = { region: region.name, units: region.units, insideSum, partialSum };
+    add(innies, innieSum, { kind: 'innie', ...info });
+    add(outies, partialSum - innieSum, { kind: 'outie', ...info });
+  }
+  puzzle.hintContext = { peers, cages, virtuals };
+  return puzzle.hintContext;
+}
+
+// 合計制約 c について、次に取れる一手(候補の削除かマスの確定)を 1 つ返す。
+function constraintAction(c, v, cand, wantCombo, wantRequired) {
+  const { placed, empties, rem } = constraintState(c, v);
+  if (!empties.length) return null;
+
+  if (!c.distinct) {
+    // 数字が重複しうる合計: 他マスの最小・最大から各マスの範囲を絞る。
+    if (!wantCombo) return null;
+    let sumMin = 0, sumMax = 0;
+    for (const id of empties) {
+      if (!cand[id]) return null;
+      sumMin += lowestDigit(cand[id]);
+      sumMax += highestDigit(cand[id]);
+    }
+    const elim = [];
+    for (const id of empties) {
+      const lo = rem - (sumMax - highestDigit(cand[id]));
+      const hi = rem - (sumMin - lowestDigit(cand[id]));
+      let remove = 0;
+      for (let d = 1; d <= 9; d++) if ((cand[id] & (1 << d)) && (d < lo || d > hi)) remove |= 1 << d;
+      if (remove) elim.push([id, remove]);
+    }
+    return elim.length ? { c, type: 'bounds', elim } : null;
+  }
+
+  const { allowed, required } = comboInfo(empties, placed, rem, cand);
+  if (!allowed) return null;
+
+  if (wantCombo) {
+    const elim = empties.map((id) => [id, cand[id] & ~allowed]).filter(([, m]) => m);
+    if (elim.length) return { c, type: 'combo', elim };
+  }
+  if (wantRequired) {
+    for (let d = 1; d <= 9; d++) {
+      if (!(required & (1 << d))) continue;
+      const places = empties.filter((id) => cand[id] & (1 << d));
+      if (places.length === 1) return { c, type: 'place', id: places[0], d };
+      for (let u = 0; u < UNITS.length; u++) {
+        const a = pointingIn(c, v, cand, places, d, u);
+        if (a) return a;
+      }
+    }
+  }
+  return null;
+}
+
+// 合計制約のうち、記入済みの数字(placed)と空きマス、空きマスに残る合計(rem)。
+function constraintState(c, v) {
+  let placed = 0, placedSum = 0;
+  const empties = [];
+  for (const id of c.cells) {
+    if (v[id]) { placed |= 1 << v[id]; placedSum += v[id]; } else empties.push(id);
+  }
+  return { placed, empties, rem: c.sum - placedSum };
+}
+
+// 空きマスの候補から成立する組み合わせの一覧(list)、和集合(allowed)、共通部分(required)。
+function comboInfo(empties, placed, rem, cand) {
+  const avail = empties.reduce((acc, id) => acc | cand[id], 0) & ~placed;
+  let allowed = 0, required = FULL;
+  const list = [];
+  for (const combo of (rem >= 0 && rem <= 45 ? COMBOS[empties.length][rem] : [])) {
+    if (combo & ~avail) continue;
+    if (empties.some((id) => !(cand[id] & combo))) continue;
+    list.push(combo);
+    allowed |= combo;
+    required &= combo;
+  }
+  return { list, allowed, required: allowed ? required : 0 };
+}
+
+// 必須の数字 d の置き場所 places が単位 u に収まるなら、u の制約外のマスから d を消す。
+function pointingIn(c, v, cand, places, d, u) {
+  const bit = 1 << d;
+  if (!places.every((id) => UNITS[u].includes(id))) return null;
+  const elim = UNITS[u].filter((id) => !v[id] && !c.set.has(id) && (cand[id] & bit)).map((id) => [id, bit]);
+  return elim.length ? { c, type: 'pointing', elim, unit: u, d } : null;
+}
+
+// 記録した手順を今の候補で再計算し、そのうち s.keep に残した削除だけを適用する
+// (手順の絞り込み・説明用)。実際に消した候補を返す。
+function replayStep(s, v, cand) {
+  let a = null;
+  if (s.type !== 'pointing') {
+    a = constraintAction(s.c, v, cand, true, false);
+  } else {
+    const { placed, empties, rem } = constraintState(s.c, v);
+    const { required } = comboInfo(empties, placed, rem, cand);
+    if (required & (1 << s.d)) a = pointingIn(s.c, v, cand, empties.filter((id) => cand[id] & (1 << s.d)), s.d, s.unit);
+  }
+  if (!a) return [];
+  const elim = a.elim.map(([id, mask]) => [id, mask & (s.keep.get(id) || 0)]).filter(([, m]) => m);
+  applyElim(cand, elim);
+  return elim;
+}
+
+// 手順の結果として、目標のマスが同じ理由で確定するか。
+function targetHolds(r, v, cand) {
+  const bit = 1 << r.d;
+  if (r.kind === 'naked') return cand[r.id] === bit;
+  if (r.kind === 'hidden') return UNITS[r.unit].filter((id) => !v[id] && (cand[id] & bit)).length === 1;
+  const a = constraintAction(r.c, v, cand, false, true);
+  return !!a && a.type === 'place' && a.id === r.id && a.d === r.d;
+}
+
+const stepLevel = (s) => (s.c.kind !== 'cage' ? 3 : s.type === 'pointing' ? 2 : 1);
+
+// 確定に不要な手順を、難しい手筋から順に外していく。そのあと残った手順からも、
+// 確定に関係しない候補の削除を 1 つずつ外す(説明に出す削除を必要なものだけにする)。
+function minimizeSteps(r, v, baseCand) {
+  const holds = (steps) => {
+    const cand = baseCand.slice();
+    for (const s of steps) replayStep(s, v, cand);
+    return targetHolds(r, v, cand);
+  };
+  let kept = r.steps.slice();
+  if (!holds(kept)) return kept;
+  const order = kept.map((s, i) => i).sort((a, b) => stepLevel(kept[b]) - stepLevel(kept[a]) || b - a);
+  const removed = new Set();
+  for (const i of order) {
+    removed.add(i);
+    if (!holds(kept.filter((_, j) => !removed.has(j)))) removed.delete(i);
+  }
+  kept = kept.filter((_, j) => !removed.has(j));
+
+  for (let i = kept.length - 1; i >= 0; i--) {
+    for (const [id, mask] of [...kept[i].keep]) {
+      for (let d = 1; d <= 9; d++) {
+        if (!(mask & (1 << d))) continue;
+        const before = kept[i].keep.get(id);
+        kept[i].keep.set(id, before & ~(1 << d));
+        if (!holds(kept)) kept[i].keep.set(id, before);
+      }
+    }
+  }
+  return kept.filter((s) => [...s.keep.values()].some((m) => m));
+}
+
+function applyElim(cand, elim) {
+  for (const [id, mask] of elim) cand[id] &= ~mask;
+}
+
+// naked single / hidden single(行・列・ブロック)。
+function findSingle(v, cand) {
+  for (let id = 0; id < 81; id++) {
+    if (!v[id] && popcount(cand[id]) === 1) return { id, d: lowestDigit(cand[id]), kind: 'naked' };
+  }
+  for (let u = 0; u < UNITS.length; u++) {
+    for (let d = 1; d <= 9; d++) {
+      const bit = 1 << d;
+      if (UNITS[u].some((id) => v[id] === d)) continue;
+      const places = UNITS[u].filter((id) => !v[id] && (cand[id] & bit));
+      if (places.length === 1) return { id: places[0], d, kind: 'hidden', unit: u };
+    }
+  }
+  return null;
+}
+
+// 易しい順: ケージの組み合わせ → ケージの必須数字(確定・pointing)→ 45 の法則。
+// 45 の法則は、その一手のあと易しい手筋だけでマスが確定するものを優先する。
+function nextAction(ctx, v, cand, allow45) {
+  for (const c of ctx.cages) { const a = constraintAction(c, v, cand, true, false); if (a) return a; }
+  for (const c of ctx.cages) { const a = constraintAction(c, v, cand, false, true); if (a) return a; }
+  if (!allow45) return null;
+  let fallback = null;
+  for (const c of ctx.virtuals) {
+    const a = constraintAction(c, v, cand, true, true);
+    if (!a) continue;
+    if (a.type === 'place') return a;
+    if (!fallback) fallback = a;
+    const trial = cand.slice();
+    applyElim(trial, a.elim);
+    if (easyClosureFinds(ctx, v, trial)) return a;
+  }
+  return fallback;
+}
+
+function easyClosureFinds(ctx, v, cand) {
+  for (let i = 0; i < 1000; i++) {
+    if (findSingle(v, cand)) return true;
+    const a = nextAction(ctx, v, cand, false);
+    if (!a) return false;
+    if (a.type === 'place') return true;
+    applyElim(cand, a.elim);
+  }
+  return false;
+}
+
+// 現在の盤面から、次に確定できるマスと、そこまでに使う手筋の列を求める。
+function findHint(values) {
+  const ctx = hintContext(P);
+  const v = values.slice();
+  const cand = v.map((value, id) => {
+    if (value) return 0;
+    let m = FULL;
+    for (const p of ctx.peers[id]) if (v[p]) m &= ~(1 << v[p]);
+    return m;
+  });
+  const baseCand = cand.slice();
+  const steps = [];
+  for (let i = 0; i < 5000; i++) {
+    let r = findSingle(v, cand);
+    const a = r ? null : nextAction(ctx, v, cand, true);
+    if (!r && !a) return { stuck: true, steps };
+    if (a && a.type === 'place') r = { id: a.id, d: a.d, kind: 'constraint', c: a.c };
+    if (r) {
+      r.steps = steps;
+      r.steps = minimizeSteps(r, v, baseCand);
+      r.baseCand = baseCand;
+      return r;
+    }
+    a.keep = new Map(a.elim);
+    steps.push(a);
+    applyElim(cand, a.elim);
+  }
+  return { stuck: true, steps };
+}
+
+// ヒントと同じ手筋だけで最後まで解く。解けなければ(または結果がルールに合わなければ)null。
+// 手筋はどれも健全な推論なので、解けた場合は解が一意。
+function solveByLogic(puzzle) {
+  const ctx = hintContext(puzzle);
+  const v = puzzle.givens.slice();
+  const cand = v.map((value, id) => {
+    if (value) return 0;
+    let m = FULL;
+    for (const p of ctx.peers[id]) if (v[p]) m &= ~(1 << v[p]);
+    return m;
+  });
+  const place = (id, d) => {
+    v[id] = d;
+    cand[id] = 0;
+    for (const p of ctx.peers[id]) cand[p] &= ~(1 << d);
+  };
+  for (let i = 0; i < 5000 && v.some((x) => !x); i++) {
+    if (v.some((x, id) => !x && !cand[id])) return null;
+    const r = findSingle(v, cand);
+    if (r) { place(r.id, r.d); continue; }
+    const a = nextAction(ctx, v, cand, true);
+    if (!a) return null;
+    if (a.type === 'place') place(a.id, a.d);
+    else applyElim(cand, a.elim);
+  }
+  const distinct = (ids) => new Set(ids.map((id) => v[id])).size === ids.length;
+  const ok = v.every(Boolean) && UNITS.every(distinct)
+    && puzzle.cages.every((c) => distinct(c.cells) && c.cells.reduce((s, id) => s + v[id], 0) === c.sum);
+  return ok ? v : null;
+}
+
+function constraintLabel(c) {
+  if (c.kind === 'cage') return `ケージ「${c.sum}」`;
+  const where = c.kind === 'innie' ? `${c.region}の内側` : `${c.region}の外側`;
+  return `45の法則：${where}の${c.cells.length}マスの合計は${c.sum}`;
+}
+
+// ---- ヒントの説明文 ----
+
+const digitsText = (mask) => { const ds = []; for (let d = 1; d <= 9; d++) if (mask & (1 << d)) ds.push(d); return ds.join(','); };
+const comboText = (mask) => digitsText(mask).split(',').join('+');
+const cellsText = (ids) => ids.map(cellName).join('、');
+const elimText = (elim) => elim.map(([id, mask]) => `${cellName(id)}から${digitsText(mask)}`).join('、');
+
+// 45 の法則で合計が決まる理由。ケージなら空。
+function derivationLines(c) {
+  if (c.kind === 'cage') return [];
+  const total = 45 * c.units;
+  const head = `45の法則：${c.region}の数字の合計は${c.units === 1 ? '45' : `45×${c.units}=${total}`}。`
+    + `その中に収まるケージの合計は${c.insideSum}なので、`;
+  if (c.kind === 'innie') {
+    return [`${head}はみ出しているケージの内側（色付き${c.cells.length}マス）の合計は${total}−${c.insideSum}=${c.sum}`];
+  }
+  const inner = total - c.insideSum;
+  return [`${head}はみ出しているケージの内側の合計は${inner}。`
+    + `はみ出しているケージの合計は${c.partialSum}なので、外側（色付き${c.cells.length}マス）の合計は${c.partialSum}−${inner}=${c.sum}`];
+}
+
+// 「ケージ「12」は2マスで合計12」のような、空きマスに残る合計の説明。
+function sumText(c, st) {
+  const who = c.kind === 'cage' ? `ケージ「${c.sum}」は` : '色付きのマスは';
+  if (c.cells.length === 1) return `${who}1マスだけ`;
+  if (!st.placed) return `${who}${st.empties.length}マスで合計${st.rem}`;
+  return `${who}、すでに入っている${digitsText(st.placed)}を引くと、残り${st.empties.length}マスで合計${st.rem}`;
+}
+
+function combosText(st, cand) {
+  const { list } = comboInfo(st.empties, st.placed, st.rem, cand);
+  const shown = list.slice(0, 6).map(comboText).join(' / ');
+  return list.length > 6 ? `${shown} ほか${list.length - 6}通り` : shown;
+}
+
+// 1 つの手順の説明。cand はその手順を適用する前の候補、elim は実際に消す候補。
+function describeStep(s, v, cand, elim) {
+  const c = s.c;
+  const st = constraintState(c, v);
+  const lines = derivationLines(c);
+  if (s.type !== 'pointing' && st.empties.length === 1) {
+    const id = st.empties[0];
+    lines.push(`${sumText(c, st)}。${cellName(id)}は${st.rem}です`);
+    lines.push(`→ ${cellName(id)}から${digitsText(elim[0][1])}を消す`);
+  } else if (s.type === 'bounds') {
+    lines.push(`${sumText(c, st)}。同じ数字が入ることもあるので、ほかのマスの最小・最大で考えます`);
+    for (const [id, mask] of elim) {
+      const others = st.empties.filter((p) => p !== id);
+      const oMin = others.reduce((a, p) => a + lowestDigit(cand[p]), 0);
+      const oMax = others.reduce((a, p) => a + highestDigit(cand[p]), 0);
+      const range = [];
+      if (lowestDigit(mask) < st.rem - oMax) range.push(`${st.rem}−${oMax}=${st.rem - oMax}以上`);
+      if (highestDigit(mask) > st.rem - oMin) range.push(`${st.rem}−${oMin}=${st.rem - oMin}以下`);
+      lines.push(`${cellName(id)}：ほかのマスは最小${oMin}・最大${oMax}なので${range.join('、')} → ${digitsText(mask)}を消す`);
+    }
+  } else if (s.type === 'combo') {
+    lines.push(`${sumText(c, st)}。今の候補で作れる組み合わせは ${combosText(st, cand)}`);
+    lines.push(`→ どの組み合わせにも無い数字を消す：${elimText(elim)}`);
+  } else {
+    const where = c.kind === 'cage' ? 'ケージ' : '色付きのマス';
+    lines.push(`${sumText(c, st)}。今の候補で作れる組み合わせは ${combosText(st, cand)} で、どれにも${s.d}が入ります`);
+    lines.push(`${where}の中で${s.d}が入れるマスは、すべて${UNIT_NAMES[s.unit]}にあります`);
+    lines.push(`→ ${UNIT_NAMES[s.unit]}のほかのマス（${cellsText(elim.map(([id]) => id))}）から${s.d}を消す`);
+  }
+  return lines.join('\n');
+}
+
+// 最後にマスが確定する理由。cand は手順をすべて適用したあとの候補。
+function describeTarget(r, v, baseCand, cand) {
+  const bit = 1 << r.d;
+  if (r.kind === 'naked') {
+    const byPeers = FULL & ~baseCand[r.id];
+    const bySteps = baseCand[r.id] & ~bit;
+    const why = [];
+    if (byPeers) why.push(`同じ行・列・ブロック・ケージにある${digitsText(byPeers)}は入らない`);
+    if (bySteps) why.push(`手順で${digitsText(bySteps)}が消えた`);
+    return { marks: new Set(), text: `${cellName(r.id)}の候補は${r.d}だけ（naked single）\n${why.join('。')}` };
+  }
+  if (r.kind === 'hidden') {
+    const unit = UNITS[r.unit];
+    const bySteps = unit.filter((id) => id !== r.id && !v[id] && (baseCand[id] & bit));
+    const lines = [`${UNIT_NAMES[r.unit]}で${r.d}が入れるのは${cellName(r.id)}だけ（hidden single）`];
+    if (bySteps.length) lines.push(`${cellsText(bySteps)}の${r.d}は手順で消えました`);
+    if (unit.some((id) => id !== r.id && !v[id] && !bySteps.includes(id))) {
+      lines.push(`${bySteps.length ? 'それ以外の' : 'ほかの'}空きマスは、同じ行・列・ブロック・ケージに${r.d}があります`);
+    }
+    return { marks: new Set(unit), text: lines.join('\n') };
+  }
+  const c = r.c;
+  const st = constraintState(c, v);
+  const where = c.kind === 'cage' ? 'ケージ' : '色付きのマス';
+  const lines = derivationLines(c);
+  lines.push(`${sumText(c, st)}。今の候補で作れる組み合わせは ${combosText(st, cand)} で、どれにも${r.d}が入ります`);
+  lines.push(`${where}の中で${r.d}が入れるのは${cellName(r.id)}だけ`);
+  return { marks: new Set(c.cells), text: lines.join('\n') };
+}
+
+// ヒントの段階: [概要, 手順1, 手順2, …, 答え]。
+function hintStages(r, v) {
+  const stages = [overviewStage(r)];
+  const cand = r.baseCand.slice();
+  r.steps.forEach((s, i) => {
+    const before = cand.slice();
+    const elim = replayStep(s, v, cand);
+    stages.push({
+      marks: new Set(s.c.cells),
+      elim: new Map(elim),
+      text: `手順${i + 1}/${r.steps.length}：${describeStep(s, v, before, elim)}`,
+    });
+  });
+  const target = describeTarget(r, v, r.baseCand, cand);
+  stages.push({ ...target, sel: r.id, text: `答え：${cellName(r.id)} は ${r.d}\n${target.text}` });
+  return stages;
+}
+
+// 1 回目に出す概要: 使う手筋と注目する場所だけを示す。
+function overviewStage(r) {
+  const marks = new Set();
+  const rule45 = r.steps.filter((s) => s.c.kind !== 'cage').map((s) => s.c);
+  if (r.kind === 'constraint' && r.c.kind !== 'cage') rule45.push(r.c);
+  const pointing = r.steps.filter((s) => s.type === 'pointing' && s.c.kind === 'cage');
+  let text;
+  if (rule45.length) {
+    rule45.forEach((c) => c.cells.forEach((id) => marks.add(id)));
+    const labels = [...new Set(rule45.map(constraintLabel))];
+    text = `ヒント：45の法則を使います。\n${labels.join('\n')}`;
+  } else if (pointing.length) {
+    const s = pointing[pointing.length - 1];
+    s.c.cells.forEach((id) => marks.add(id));
+    text = `ヒント：ケージ「${s.c.sum}」に必ず入る${s.d}が${UNIT_NAMES[s.unit]}に偏ります（pointing）`;
+  } else if (r.kind === 'constraint') {
+    r.c.cells.forEach((id) => marks.add(id));
+    text = `ヒント：ケージ「${r.c.sum}」に必ず入る数字の置き場所が、1か所に決まります`;
+  } else if (r.kind === 'hidden') {
+    UNITS[r.unit].forEach((id) => marks.add(id));
+    text = `ヒント：${UNIT_NAMES[r.unit]}に、入る場所が1か所しかない数字があります（hidden single）`;
+  } else {
+    UNITS[boxOf(r.id) * 3 + 2].forEach((id) => marks.add(id));
+    const combo = r.steps.some((s) => s.type === 'combo');
+    text = `ヒント：ブロック${boxOf(r.id) + 1}に、${combo ? 'ケージの組み合わせを考えると' : ''}候補が1つに絞れるマスがあります（naked single）`;
+  }
+  return { marks, text };
+}
+
+function showHint() {
+  if (!P || S.solved) return;
+  markAssisted('hint');
+  // 間違った数字があると推論が成り立たないので、先に知らせる。
+  const bad = P.answer
+    ? S.values.map((v, id) => (v && v !== P.answer[id] ? id : -1)).filter((id) => id >= 0)
+    : [...conflicts()];
+  if (bad.length) {
+    clearHint();
+    wrongMarks = new Set(bad);
+    message = { text: `間違っているマスが${bad.length}個あります。先に直してください`, kind: 'bad' };
+    render();
+    return;
+  }
+
+  const snapshot = S.values.join('');
+  // 同じ盤面で押し直すたびに、概要 → 手順 1, 2, … → 答え と 1 段ずつ進める。
+  if (hint && hint.snapshot === snapshot) {
+    if (hint.stages) hint.stage = Math.min(hint.stage + 1, hint.stages.length - 1);
+  } else {
+    const result = findHint(S.values);
+    hint = { result, stage: 0, snapshot, stages: result.stuck ? null : hintStages(result, S.values) };
+  }
+  if (!hint.stages) {
+    hintMarks = new Set();
+    hintElim = new Map();
+    message = { text: 'この盤面からは、今の手筋で次の一手が見つかりませんでした', kind: 'bad' };
+    render();
+    return;
+  }
+
+  const stage = hint.stages[hint.stage];
+  const last = hint.stage === hint.stages.length - 1;
+  let text = stage.text;
+  if (hint.stage === 0) {
+    const n = hint.stages.length - 2;
+    text += n ? `\n（もう一度押すと、${n}つの手順を1つずつ説明します）` : '\n（もう一度押すと、マスと数字を表示します）';
+  } else if (!last) {
+    text += '\n（もう一度押すと次へ）';
+  }
+  if (stage.sel !== undefined) sel = stage.sel;
+  hintMarks = stage.marks;
+  hintElim = stage.elim || new Map();
+  message = { text, kind: 'hint' };
+  render();
+}
+
+// ---------- 描画 ----------
+
+function formatTime(sec) {
+  const h = Math.floor(sec / 3600), m = Math.floor((sec % 3600) / 60), s = sec % 60;
+  const ss = String(s).padStart(2, '0');
+  return h ? `${h}:${String(m).padStart(2, '0')}:${ss}` : `${m}:${ss}`;
+}
+
+function renderList() {
+  const list = $('list');
+  list.innerHTML = '';
+  puzzles.forEach((entry, i) => {
+    const option = document.createElement('option');
+    const state = store.get(entry.puzzle.key);
+    option.value = String(i);
+    option.textContent = entry.name + (state && state.solved ? ' ✓' : '');
+    list.appendChild(option);
+  });
+  list.value = String(current);
+  $('prev').disabled = current <= 0;
+  $('next').disabled = current >= puzzles.length - 1;
+}
+
+function render() {
+  const svg = $('board');
+  if (!P) {
+    svg.innerHTML = '';
+    return;
+  }
+  const values = S.values;
+  const selValue = values[sel];
+  const bad = conflicts();
+  const peers = new Set();
+  for (const unit of UNITS) if (unit.includes(sel)) unit.forEach((p) => peers.add(p));
+
+  const cls = new Array(81);
+  let cells = '';
+  for (let id = 0; id < 81; id++) {
+    let c = 'c';
+    if (wrongMarks.has(id)) c += ' wrong';
+    else if (id === sel) c += ' sel';
+    else if (hintMarks.has(id)) c += ' hint';
+    else if (hintElim.has(id)) c += ' hintx';
+    else if (selValue && values[id] === selValue) c += ' same';
+    else if (peers.has(id)) c += ' peer';
+    cls[id] = c;
+    cells += `<rect class="${c}" x="${colOf(id) * C}" y="${rowOf(id) * C}" width="${C}" height="${C}"/>`;
+  }
+
+  let lines = '';
+  for (let i = 1; i < 9; i++) {
+    if (i % 3 === 0) continue;
+    lines += `<line class="thin" x1="${i * C}" y1="0" x2="${i * C}" y2="${9 * C}"/><line class="thin" x1="0" y1="${i * C}" x2="${9 * C}" y2="${i * C}"/>`;
+  }
+  let boxes = '';
+  for (const i of [3, 6]) {
+    boxes += `<line class="box" x1="${i * C}" y1="0" x2="${i * C}" y2="${9 * C}"/><line class="box" x1="0" y1="${i * C}" x2="${9 * C}" y2="${i * C}"/>`;
+  }
+
+  // 合計値。下に敷く矩形でケージの点線を隠す(色はそのマスの背景と同じ)。
+  let sums = '';
+  P.cages.forEach((cage, i) => {
+    const id = cage.cells[0];
+    const x = colOf(id) * C, y = rowOf(id) * C;
+    const text = String(cage.sum);
+    sums += `<rect class="${cls[id]}" x="${x + 3}" y="${y + 3}" width="${8 + text.length * 13}" height="25"/>`;
+    sums += `<text class="sum${cageError(i) ? ' bad' : ''}" x="${x + 6}" y="${y + 23}">${text}</text>`;
+  });
+
+  let digits = '';
+  for (let id = 0; id < 81; id++) {
+    const x = colOf(id) * C, y = rowOf(id) * C;
+    if (values[id]) {
+      const kind = P.givens[id] ? 'given' : 'user';
+      digits += `<text class="val ${kind}${bad.has(id) ? ' err' : ''}" x="${x + 50}" y="${y + 57}">${values[id]}</text>`;
+    } else {
+      // ヒントで消す候補は、メモの位置に赤い取り消し線付きで描く。
+      const elim = hintElim.get(id) || 0;
+      for (let d = 1; d <= 9; d++) {
+        const px = x + 27 + ((d - 1) % 3) * 23;
+        const py = y + 42 + Math.floor((d - 1) / 3) * 22;
+        if (elim & (1 << d)) {
+          digits += `<text class="pm x" x="${px}" y="${py}">${d}</text><line class="pmx" x1="${px - 9}" y1="${py + 8}" x2="${px + 9}" y2="${py - 8}"/>`;
+        } else if (S.pencils[id] & (1 << d)) {
+          digits += `<text class="pm${d === selValue ? ' hl' : ''}" x="${px}" y="${py}">${d}</text>`;
+        }
+      }
+    }
+  }
+
+  svg.innerHTML = cells + lines + `<path class="cage" d="${P.path}"/>` + boxes
+    + `<rect class="outer" x="0" y="0" width="${9 * C}" height="${9 * C}"/>` + sums + digits;
+
+  renderPad();
+  renderCombos();
+  renderRecord();
+  const status = $('status');
+  status.textContent = message.text;
+  status.className = 'status' + (message.kind ? ' ' + message.kind : '');
+  $('pencil').setAttribute('aria-pressed', String(pencilMode));
+  $('timer').textContent = formatTime(S.elapsed);
+}
+
+function renderPad() {
+  const pad = $('pad');
+  pad.classList.toggle('pencil', pencilMode);
+  const counts = new Array(10).fill(0);
+  S.values.forEach((v) => { counts[v]++; });
+  pad.querySelectorAll('button').forEach((button) => {
+    const d = Number(button.dataset.d);
+    button.querySelector('.rest').textContent = String(9 - counts[d]);
+    button.classList.toggle('done', counts[d] >= 9);
+  });
+}
+
+function renderCombos() {
+  const box = $('combos');
+  box.hidden = !$('showCombos').checked || !P;
+  if (box.hidden) return;
+  const cage = P.cages[P.cageOf[sel]];
+  const size = cage.cells.length;
+  let placed = 0;
+  for (const id of cage.cells) if (S.values[id]) placed |= 1 << S.values[id];
+  const combos = [];
+  for (let mask = 2; mask < 1024; mask += 2) {
+    let sum = 0, count = 0;
+    for (let d = 1; d <= 9; d++) if (mask & (1 << d)) { sum += d; count++; }
+    if (count === size && sum === cage.sum) combos.push(mask);
+  }
+  const items = combos.map((mask) => {
+    let text = '';
+    for (let d = 1; d <= 9; d++) if (mask & (1 << d)) text += d;
+    return `<span class="${(mask & placed) === placed ? '' : 'out'}">${text}</span>`;
+  });
+  box.innerHTML = `<div class="head">${size}マス・合計${cage.sum}</div><div class="list">${items.join('') || 'なし'}</div>`;
+}
+
+// ---------- 入力 ----------
+
+function setupPad() {
+  const pad = $('pad');
+  for (let d = 1; d <= 9; d++) {
+    const button = document.createElement('button');
+    button.dataset.d = String(d);
+    button.innerHTML = `${d}<span class="rest"></span>`;
+    button.addEventListener('click', () => inputDigit(d, false));
+    pad.appendChild(button);
+  }
+}
+
+function moveSel(dr, dc) {
+  const r = (rowOf(sel) + dr + 9) % 9;
+  const c = (colOf(sel) + dc + 9) % 9;
+  sel = r * 9 + c;
+  render();
+}
+
+const LETTER_DIGITS = {
+  KeyQ: 7, KeyW: 8, KeyE: 9,
+  KeyA: 4, KeyS: 5, KeyD: 6,
+  KeyZ: 1, KeyX: 2, KeyC: 3,
+};
+
+document.addEventListener('keydown', (e) => {
+  if (!P || (e.target instanceof Element && e.target.closest('textarea, select, input'))) return;
+  const ctrl = e.ctrlKey || e.metaKey;
+  const key = e.key.toLowerCase();
+  if (ctrl && key === 'z' && !e.shiftKey) { e.preventDefault(); undo(); return; }
+  if (ctrl && (key === 'y' || (key === 'z' && e.shiftKey))) { e.preventDefault(); redo(); return; }
+  if (ctrl || e.altKey) return;
+  const digit = /^Digit([1-9])$/.exec(e.code) || /^Numpad([1-9])$/.exec(e.code);
+  if (digit) { e.preventDefault(); inputDigit(Number(digit[1]), e.shiftKey); return; }
+  // 左手用: QWE/ASD/ZXC をテンキー配置の 789/456/123 として使う。物理キーで判定するので
+  // 日本語入力がオンでも効く。
+  if (e.code in LETTER_DIGITS) { e.preventDefault(); inputDigit(LETTER_DIGITS[e.code], e.shiftKey); return; }
+  if (e.code === 'KeyV' || e.key === ' ') { e.preventDefault(); pencilMode = !pencilMode; render(); return; }
+  if (e.code === 'KeyH') { e.preventDefault(); showHint(); return; }
+  switch (e.key) {
+    case 'ArrowUp': e.preventDefault(); moveSel(-1, 0); break;
+    case 'ArrowDown': e.preventDefault(); moveSel(1, 0); break;
+    case 'ArrowLeft': e.preventDefault(); moveSel(0, -1); break;
+    case 'ArrowRight': e.preventDefault(); moveSel(0, 1); break;
+    case 'Backspace': case 'Delete': case '0': e.preventDefault(); erase(); break;
+    default: break;
+  }
+});
+
+$('board').addEventListener('pointerdown', (e) => {
+  if (!P) return;
+  const rect = e.currentTarget.getBoundingClientRect();
+  // viewBox は -4..904 なので、盤面 0..900 の範囲に換算する。
+  const x = ((e.clientX - rect.left) / rect.width) * 908 - 4;
+  const y = ((e.clientY - rect.top) / rect.height) * 908 - 4;
+  const c = Math.floor(x / C), r = Math.floor(y / C);
+  if (r < 0 || r > 8 || c < 0 || c > 8) return;
+  sel = r * 9 + c;
+  render();
+});
+
+$('pencil').addEventListener('click', () => { pencilMode = !pencilMode; render(); });
+$('erase').addEventListener('click', erase);
+$('undo').addEventListener('click', undo);
+$('redo').addEventListener('click', redo);
+$('check').addEventListener('click', checkAnswer);
+$('hint').addEventListener('click', showHint);
+$('reset').addEventListener('click', reset);
+$('showCombos').addEventListener('change', () => {
+  store.set('killer:showCombos', $('showCombos').checked);
+  render();
+});
+$('list').addEventListener('change', (e) => selectPuzzle(Number(e.target.value)));
+$('prev').addEventListener('click', () => { if (current > 0) selectPuzzle(current - 1); });
+$('next').addEventListener('click', () => { if (current < puzzles.length - 1) selectPuzzle(current + 1); });
+
+let customCount = 0;
+function addCustom(text) {
+  const lines = text.split(/\r?\n/).map((l) => l.trim()).filter((l) => l && !l.startsWith('#'));
+  if (!lines.length) throw new Error('問題が入力されていません');
+  const parsed = lines.map((line, i) => {
+    try { return parseLine(line); } catch (err) { throw new Error(`${i + 1}行目: ${err.message}`); }
+  });
+  const first = puzzles.length;
+  for (const puzzle of parsed) {
+    customCount++;
+    puzzles.push({ name: `読み込み ${customCount}`, puzzle, custom: true });
+  }
+  return first;
+}
+
+// ---------- ブラウザでの問題生成(wasm) ----------
+// 生成した問題はこのブラウザに最大 GENERATED_MAX 問まで覚えておく。
+
+const GENERATED_KEY = 'killer:generated';
+const GENERATED_MAX = 30;
+let generator = null;  // wasm の exports
+let generatedCount = 0;
+
+async function loadGenerator() {
+  const bytes = Uint8Array.from(atob(WASM), (ch) => ch.charCodeAt(0));
+  const { instance } = await WebAssembly.instantiate(bytes, {});
+  generator = instance.exports;
+}
+
+function generateLine(maxSize) {
+  const seed = crypto.getRandomValues(new Uint32Array(2));
+  const len = generator.generate(seed[0], seed[1], maxSize);
+  return new TextDecoder().decode(new Uint8Array(generator.memory.buffer, generator.output_ptr(), len));
+}
+
+// category はランキングの区分(生成時の「ケージ○マスまで」)。保存データは { line, size }。
+// 区分を覚えていない古い保存データ(文字列)は、最大のケージの大きさから決める。
+function addGenerated(saved) {
+  const line = typeof saved === 'string' ? saved : saved.line;
+  const puzzle = parseLine(line);
+  const maxCage = Math.max(...puzzle.cages.map((c) => c.cells.length));
+  const category = typeof saved === 'string' ? CATEGORIES.find((c) => c >= maxCage) : saved.size;
+  generatedCount++;
+  puzzles.push({ name: `生成 ${generatedCount}`, puzzle, custom: true, category });
+  return puzzles.length - 1;
+}
+
+function newPuzzle() {
+  if (!generator) return;
+  const size = Number($('genSize').value);
+  store.set('killer:genSize', size);
+  const saved = { line: generateLine(size), size };
+  store.set(GENERATED_KEY, (store.get(GENERATED_KEY) || []).concat([saved]).slice(-GENERATED_MAX));
+  selectPuzzle(addGenerated(saved));
+}
+
+// ---------- ランキング ----------
+// 公開サイト(wasm 入りで http(s) から開いたとき)だけ使う。API は worker/index.js。
+
+const CATEGORIES = [4, 5, 6, 9];
+const RANKING = !!WASM && /^https?:$/.test(location.protocol);
+const NAMES_KEY = 'killer:names';  // 登録に使った名前(最後に使ったものが先頭)
+
+const jstToday = () => new Date(Date.now() + 9 * 3600 * 1000).toISOString().slice(0, 10);
+const savedNames = () => (store.get(NAMES_KEY) || []).filter((n) => typeof n === 'string' && n);
+
+function rememberName(name) {
+  store.set(NAMES_KEY, [name].concat(savedNames().filter((n) => n !== name)).slice(0, 20));
+}
+
+// ランキングに登録できる問題か(このサイトで生成した、ヒント数字のない問題)。
+function rankable() {
+  return RANKING && !!P && !!puzzles[current].category && !P.givens.some(Boolean);
+}
+
+let recordFormKey = null;  // 登録フォームを今どの問題・状態で作ってあるか
+
+function renderRecord() {
+  const show = rankable() && S.solved && !S.noRecord;
+  $('record').hidden = !show;
+  if (!show) { recordFormKey = null; return; }
+  const formKey = P.key + (S.recorded ? ':done' : '');
+  if (recordFormKey === formKey) return;
+  recordFormKey = formKey;
+
+  const rows = $('record').querySelectorAll('.row');
+  const msg = $('recMsg');
+  if (S.recorded) {
+    const r = S.recorded;
+    rows.forEach((row) => { row.hidden = true; });
+    $('record').querySelector('.head').textContent = `タイム ${formatTime(S.elapsed)} を登録しました`;
+    msg.className = 'done';
+    msg.textContent = `${r.name}（${r.date}）　月間 ${r.rankMonth}位 / 通時 ${r.rankAll}位`;
+    return;
+  }
+  rows.forEach((row) => { row.hidden = false; });
+  $('record').querySelector('.head').innerHTML = 'タイム <b id="recTime"></b> をランキングに登録できます';
+  $('recTime').textContent = formatTime(S.elapsed);
+  msg.className = 'err';
+  msg.textContent = '';
+  // 登録したことのある名前を選べるようにし、最後に使った名前を初期値にする。
+  const names = savedNames();
+  const select = $('recNameSel');
+  select.innerHTML = '';
+  for (const name of names) select.add(new Option(name, name));
+  select.add(new Option('新しい名前を入力…', ''));
+  select.hidden = !names.length;
+  select.value = names.length ? names[0] : '';
+  $('recName').value = '';
+  $('recName').hidden = !!names.length;
+  $('recDate').textContent = `日付 ${jstToday()}`;
+}
+
+async function submitRecord() {
+  if (!rankable() || !S.solved || S.noRecord || S.recorded) return;
+  const select = $('recNameSel');
+  const name = (!select.hidden && select.value ? select.value : $('recName').value).replace(/\s+/g, ' ').trim();
+  const msg = $('recMsg');
+  if (!name) {
+    msg.textContent = '名前を入力してください';
+    $('recName').focus();
+    return;
+  }
+  const state = S, key = P.key, category = puzzles[current].category;
+  $('recSubmit').disabled = true;
+  msg.textContent = '';
+  try {
+    const res = await fetch('/api/records', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ name, category, puzzle: P.line, values: state.values.join(''), seconds: state.elapsed }),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.error || `登録できませんでした（${res.status}）`);
+    rememberName(name);
+    state.recorded = { name, date: data.date, rankMonth: data.rankMonth, rankAll: data.rankAll };
+    store.set(key, state);
+    if (S === state) {
+      render();
+      openRanking(category, data.month);
+    }
+  } catch (err) {
+    msg.textContent = err instanceof TypeError ? '通信できませんでした。時間をおいてもう一度試してください' : err.message;
+  } finally {
+    $('recSubmit').disabled = false;
+  }
+}
+
+$('recSubmit').addEventListener('click', submitRecord);
+$('recName').addEventListener('keydown', (e) => { if (e.key === 'Enter') submitRecord(); });
+$('recNameSel').addEventListener('change', () => {
+  const custom = $('recNameSel').value === '';
+  $('recName').hidden = !custom;
+  if (custom) $('recName').focus();
+});
+
+const rk = { period: 'month', month: jstToday().slice(0, 7), category: 5, seq: 0 };
+
+function shiftMonth(month, delta) {
+  const [y, m] = month.split('-').map(Number);
+  const d = new Date(Date.UTC(y, m - 1 + delta, 1));
+  return d.toISOString().slice(0, 7);
+}
+
+function openRanking(category, month) {
+  rk.category = category;
+  rk.period = 'month';
+  if (month) rk.month = month;
+  $('ranking').open = true;
+  loadRanking();
+}
+
+async function loadRanking() {
+  if (!$('ranking').open) return;
+  const monthly = rk.period === 'month';
+  $('rkMonthly').setAttribute('aria-pressed', String(monthly));
+  $('rkAll').setAttribute('aria-pressed', String(!monthly));
+  $('rkCat').value = String(rk.category);
+  $('rkMonthNav').hidden = !monthly;
+  const [y, m] = rk.month.split('-').map(Number);
+  $('rkMonth').textContent = `${y}年${m}月`;
+  $('rkNext').disabled = rk.month >= jstToday().slice(0, 7);
+
+  const body = $('rkBody');
+  const seq = ++rk.seq;
+  body.innerHTML = '<p class="rank-empty">読み込み中…</p>';
+  let records;
+  try {
+    const res = await fetch(`/api/ranking?category=${rk.category}&period=${monthly ? rk.month : 'all'}`);
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) throw new Error(data.error || `読み込めませんでした（${res.status}）`);
+    records = data.records;
+  } catch (err) {
+    if (seq !== rk.seq) return;
+    body.innerHTML = '';
+    const p = document.createElement('p');
+    p.className = 'rank-empty';
+    p.textContent = err instanceof TypeError ? 'ランキングを読み込めませんでした' : err.message;
+    body.appendChild(p);
+    return;
+  }
+  if (seq !== rk.seq) return;
+  body.innerHTML = '';
+  if (!records.length) {
+    body.innerHTML = '<p class="rank-empty">まだ記録がありません</p>';
+    return;
+  }
+  const mine = new Set(savedNames());
+  const table = document.createElement('table');
+  table.className = 'rank-table';
+  records.forEach((r, i) => {
+    const tr = table.insertRow();
+    if (mine.has(r.name)) tr.className = 'me';
+    [[String(i + 1), 'n'], [r.name, 'name'], [formatTime(r.seconds), 't'], [r.date, 'd']].forEach(([text, cls]) => {
+      const td = tr.insertCell();
+      td.className = cls;
+      td.textContent = text;
+    });
+  });
+  body.appendChild(table);
+}
+
+$('ranking').addEventListener('toggle', loadRanking);
+$('rkMonthly').addEventListener('click', () => { rk.period = 'month'; loadRanking(); });
+$('rkAll').addEventListener('click', () => { rk.period = 'all'; loadRanking(); });
+$('rkCat').addEventListener('change', () => { rk.category = Number($('rkCat').value); loadRanking(); });
+$('rkPrev').addEventListener('click', () => { rk.month = shiftMonth(rk.month, -1); loadRanking(); });
+$('rkNext').addEventListener('click', () => { rk.month = shiftMonth(rk.month, 1); loadRanking(); });
+
+$('genBtn').addEventListener('click', newPuzzle);
+
+$('load').addEventListener('click', () => {
+  try {
+    const index = addCustom($('input').value);
+    $('loadError').textContent = '';
+    $('input').value = '';
+    $('loader').open = false;
+    selectPuzzle(index);
+  } catch (err) {
+    $('loadError').textContent = err.message;
+  }
+});
+
+// ---------- タイマーと起動 ----------
+
+setInterval(() => {
+  if (!P || S.solved || document.hidden) return;
+  S.elapsed++;
+  $('timer').textContent = formatTime(S.elapsed);
+  if (S.elapsed % 10 === 0) save();
+}, 1000);
+document.addEventListener('visibilitychange', () => { if (document.hidden) save(); });
+window.addEventListener('pagehide', save);
+
+function init() {
+  setupPad();
+  $('showCombos').checked = store.get('killer:showCombos') === true;
+  EMBEDDED.forEach((line, i) => {
+    try {
+      puzzles.push({ name: `問題 ${i + 1}`, puzzle: parseLine(line) });
+    } catch (err) {
+      console.error(`埋め込み問題 ${i + 1}: ${err.message}`);
+    }
+  });
+
+  if (WASM) {
+    for (const line of store.get(GENERATED_KEY) || []) {
+      try { addGenerated(line); } catch (err) { /* 壊れた保存データは読み飛ばす */ }
+    }
+    const size = store.get('killer:genSize');
+    if (CATEGORIES.includes(size)) {
+      $('genSize').value = String(size);
+      rk.category = size;
+    }
+  }
+  $('ranking').hidden = !RANKING;
+
+  // URL の #p= は、一覧にある問題ならそれを開き、なければ読み込み問題として追加する。
+  let start = -1;
+  if (location.hash.startsWith('#p=')) {
+    try {
+      const text = decodeURIComponent(location.hash.slice(3));
+      const key = parseLine(text.split(/\r?\n/)[0]).key;
+      start = puzzles.findIndex((entry) => entry.puzzle.key === key);
+      if (start < 0) start = addCustom(text);
+    } catch (err) {
+      $('loadError').textContent = err.message;
+    }
+  }
+  if (start < 0 && EMBEDDED.length && puzzles.length) {
+    const last = store.get('killer:last');
+    start = Number.isInteger(last) && last >= 0 && last < puzzles.length ? last : 0;
+  }
+  // 埋め込み問題がなければ、最後に生成した問題の続きから。
+  if (start < 0 && puzzles.length) start = puzzles.length - 1;
+  if (start >= 0) {
+    selectPuzzle(start);
+  } else {
+    $('board').setAttribute('hidden', '');
+    $('empty').hidden = false;
+    if (WASM) $('empty').textContent = '問題を生成しています…';
+    else $('loader').open = true;
+    renderList();
+  }
+
+  if (WASM) {
+    loadGenerator().then(() => {
+      $('gen').hidden = false;
+      if (start < 0) newPuzzle();
+    }).catch((err) => {
+      console.error(err);
+      $('empty').textContent = 'このブラウザでは問題を生成できませんでした';
+    });
+  }
+}
+
+init();
+</script>
+</body>
+</html>
